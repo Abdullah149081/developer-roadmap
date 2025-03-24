@@ -1,0 +1,28 @@
+name: Sync Fork
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout forked repository
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Ensures full history is fetched
+
+      - name: Set up git remote for upstream
+        run: |
+          git remote add upstream https://github.com/kamranahmedse/developer-roadmap.git
+          git fetch upstream
+
+      - name: Merge upstream changes
+        run: |
+          git checkout master  # Ensure we are on the correct branch
+          git merge upstream/master --no-edit || echo "No new changes to merge"
+          git push origin master
