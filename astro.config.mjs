@@ -11,12 +11,19 @@ import react from '@astrojs/react';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://roadmap.sh/',
+  redirects: {
+    '/devops/devops-engineer': {
+      status: 301,
+      destination: '/devops',
+    },
+    '/ai-tutor': {
+      status: 301,
+      destination: '/ai',
+    },
+  },
   vite: {
     server: {
-      allowedHosts: [
-        'roadmap.sh',
-        'port3k.kamranahmed.info',
-      ],
+      allowedHosts: ['roadmap.sh', 'port3k.kamranahmed.info'],
     },
   },
   markdown: {
@@ -65,4 +72,9 @@ export default defineConfig({
     }),
     react(),
   ],
+  vite: {
+    ssr: {
+      noExternal: [/^@roadmapsh\/editor.*$/],
+    },
+  },
 });

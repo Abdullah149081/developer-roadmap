@@ -1,10 +1,10 @@
 ---
-import { AICourse } from '../../components/GenerateCourse/AICourse';
+import { GenerateRoadmap } from '../../components/GenerateRoadmap/GenerateRoadmap';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { CheckSubscriptionVerification } from '../../components/Billing/CheckSubscriptionVerification';
 ---
 
-<BaseLayout title='AI Tutor' noIndex={true}>
-  <AICourse client:load />
+<BaseLayout title='Roadmap AI' permalink='/ai-roadmaps'>
+  <GenerateRoadmap client:load />
   <CheckSubscriptionVerification client:load />
 </BaseLayout>
