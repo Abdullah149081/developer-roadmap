@@ -5,8 +5,9 @@ import {
   CircleOff,
   Menu,
   X,
-  Map, MessageCircleOffIcon,
-  MessageCircleIcon
+  Map,
+  MessageCircleOffIcon,
+  MessageCircleIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { type AiCourse } from '../../lib/ai';
@@ -21,6 +22,9 @@ import { AILimitsPopup } from './AILimitsPopup';
 import { AICourseOutlineView } from './AICourseOutlineView';
 import { AICourseRoadmapView } from './AICourseRoadmapView';
 import { AICourseFooter } from './AICourseFooter';
+import { ForkCourseAlert } from './ForkCourseAlert';
+import { ForkCourseConfirmation } from './ForkCourseConfirmation';
+import { useAuth } from '../../hooks/use-auth';
 
 type AICourseContentProps = {
   courseSlug?: string;
@@ -28,12 +32,20 @@ type AICourseContentProps = {
   isLoading: boolean;
   error?: string;
   onRegenerateOutline: (prompt?: string) => void;
+  creatorId?: string;
 };
 
 export type AICourseViewMode = 'module' | 'outline' | 'roadmap';
 
 export function AICourseContent(props: AICourseContentProps) {
-  const { course, courseSlug, isLoading, error, onRegenerateOutline } = props;
+  const {
+    course,
+    courseSlug,
+    isLoading,
+    error,
+    onRegenerateOutline,
+    creatorId,
+  } = props;
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showAILimitsPopup, setShowAILimitsPopup] = useState(false);
@@ -43,8 +55,10 @@ export function AICourseContent(props: AICourseContentProps) {
   const [activeLessonIndex, setActiveLessonIndex] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<AICourseViewMode>('outline');
+  const [isForkingCourse, setIsForkingCourse] = useState(false);
 
   const { isPaidUser } = useIsPaidUser();
+  const currentUser = useAuth();
 
   const aiCourseProgress = course.done || [];
 
@@ -202,7 +216,7 @@ export function AICourseContent(props: AICourseContentProps) {
             <div className="my-5">
               <a
                 href="/ai"
-                className="rounded-md bg-black px-6 py-2 text-sm font-medium text-white hover:bg-opacity-80"
+                className="hover:bg-opacity-80 rounded-md bg-black px-6 py-2 text-sm font-medium text-white"
               >
                 Create a course with AI
               </a>
@@ -214,9 +228,10 @@ export function AICourseContent(props: AICourseContentProps) {
   }
 
   const isViewingLesson = viewMode === 'module';
+  const isForkable = !!currentUser?.id && currentUser.id !== creatorId;
 
   return (
-    <section className="flex h-screen flex-grow flex-col overflow-hidden bg-gray-50">
+    <section className="flex h-screen grow flex-col overflow-hidden bg-gray-50">
       {modals}
 
       <div className="border-b border-gray-200 bg-gray-100">
@@ -233,7 +248,10 @@ export function AICourseContent(props: AICourseContentProps) {
             aria-label="Back to generator"
           >
             <ChevronLeft className="size-4" strokeWidth={2.5} />
-            Back {isViewingLesson ? 'to Outline' : 'to AI Tutor'}
+            Back{' '}
+            <span className="hidden lg:inline">
+              {isViewingLesson ? 'to Outline' : 'to AI Tutor'}
+            </span>
           </a>
           <div className="flex items-center gap-2">
             <div className="flex flex-row lg:hidden">
@@ -246,7 +264,7 @@ export function AICourseContent(props: AICourseContentProps) {
             {viewMode === 'module' && (
               <button
                 onClick={() => setIsAIChatsOpen(!isAIChatsOpen)}
-                className="flex items-center justify-center text-gray-400 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 lg:hidden"
+                className="flex items-center justify-center text-gray-400 shadow-xs transition-colors hover:bg-gray-50 hover:text-gray-900 lg:hidden"
               >
                 {isAIChatsOpen ? (
                   <MessageCircleOffIcon size={17} strokeWidth={3} />
@@ -258,7 +276,7 @@ export function AICourseContent(props: AICourseContentProps) {
 
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="flex items-center justify-center text-gray-400 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 lg:hidden"
+              className="flex items-center justify-center text-gray-400 shadow-xs transition-colors hover:bg-gray-50 hover:text-gray-900 lg:hidden"
             >
               {sidebarOpen ? (
                 <X size={17} strokeWidth={3} />
@@ -272,7 +290,7 @@ export function AICourseContent(props: AICourseContentProps) {
       <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 max-lg:py-4 lg:h-[80px]">
         <div className="flex items-center">
           <div className="flex flex-col">
-            <h1 className="text-balance text-xl font-bold !leading-tight text-gray-900 max-lg:mb-0.5 max-lg:text-lg">
+            <h1 className="text-xl leading-tight! font-bold text-balance text-gray-900 max-lg:mb-0.5 max-lg:text-lg">
               {course.title || 'Loading Course...'}
             </h1>
             <div className="mt-1 flex flex-row items-center gap-2 text-sm text-gray-600 max-lg:text-xs">
@@ -342,7 +360,7 @@ export function AICourseContent(props: AICourseContentProps) {
                     width: `${finishedPercentage}%`,
                   }}
                   className={cn(
-                    'absolute bottom-0 left-0 top-0',
+                    'absolute top-0 bottom-0 left-0',
                     'bg-gray-200/50',
                   )}
                 ></span>
@@ -354,7 +372,7 @@ export function AICourseContent(props: AICourseContentProps) {
                       setViewMode('outline');
                     }}
                     className={cn(
-                      'flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors',
+                      'flex items-center gap-1 rounded-sm px-2 py-1 text-xs transition-colors',
                       viewMode === 'outline'
                         ? 'bg-gray-200 text-gray-900'
                         : 'text-gray-600 hover:bg-gray-50',
@@ -369,7 +387,7 @@ export function AICourseContent(props: AICourseContentProps) {
                       setViewMode('roadmap');
                     }}
                     className={cn(
-                      'flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors',
+                      'flex items-center gap-1 rounded-sm px-2 py-1 text-xs transition-colors',
                       viewMode === 'roadmap'
                         ? 'bg-gray-200 text-gray-900'
                         : 'text-gray-600 hover:bg-gray-50',
@@ -420,9 +438,30 @@ export function AICourseContent(props: AICourseContentProps) {
           )}
           key={`${courseSlug}-${viewMode}`}
         >
+          {isForkable &&
+            courseSlug &&
+            (viewMode === 'outline' || viewMode === 'roadmap') && (
+              <ForkCourseAlert
+                creatorId={creatorId}
+                onForkCourse={() => {
+                  setIsForkingCourse(true);
+                }}
+              />
+            )}
+
+          {isForkingCourse && (
+            <ForkCourseConfirmation
+              onClose={() => {
+                setIsForkingCourse(false);
+              }}
+              courseSlug={courseSlug!}
+            />
+          )}
+
           {viewMode === 'module' && (
             <AICourseLesson
               courseSlug={courseSlug!}
+              creatorId={creatorId}
               progress={aiCourseProgress}
               activeModuleIndex={activeModuleIndex}
               totalModules={totalModules}
@@ -436,6 +475,10 @@ export function AICourseContent(props: AICourseContentProps) {
               onUpgrade={() => setShowUpgradeModal(true)}
               isAIChatsOpen={isAIChatsOpen}
               setIsAIChatsOpen={setIsAIChatsOpen}
+              isForkable={isForkable}
+              onForkCourse={() => {
+                setIsForkingCourse(true);
+              }}
             />
           )}
 
@@ -450,6 +493,10 @@ export function AICourseContent(props: AICourseContentProps) {
               setViewMode={setViewMode}
               setExpandedModules={setExpandedModules}
               viewMode={viewMode}
+              isForkable={isForkable}
+              onForkCourse={() => {
+                setIsForkingCourse(true);
+              }}
             />
           )}
 
@@ -466,6 +513,10 @@ export function AICourseContent(props: AICourseContentProps) {
               setExpandedModules={setExpandedModules}
               onUpgradeClick={() => setShowUpgradeModal(true)}
               viewMode={viewMode}
+              isForkable={isForkable}
+              onForkCourse={() => {
+                setIsForkingCourse(true);
+              }}
             />
           )}
 
@@ -475,7 +526,7 @@ export function AICourseContent(props: AICourseContentProps) {
 
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-10 bg-gray-900 bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-10 bg-gray-900/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}

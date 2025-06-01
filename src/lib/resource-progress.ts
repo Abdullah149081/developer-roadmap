@@ -116,6 +116,9 @@ export function clearMigratedRoadmapProgress(
     'aspnet-core',
     'java',
     'cpp',
+    'docker',
+    'prompt-engineering',
+    'aws',
   ];
 
   if (!migratedRoadmaps.includes(resourceId)) {

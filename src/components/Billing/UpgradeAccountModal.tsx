@@ -5,6 +5,7 @@ import {
   MessageSquare,
   Sparkles,
   Heart,
+  MapIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -33,17 +34,22 @@ type Perk = {
 const PREMIUM_PERKS: Perk[] = [
   {
     icon: Zap,
-    title: 'Unlimited AI Course Generations',
-    description: 'Generate as many custom courses as you need',
+    title: 'AI Course Generations',
+    description: 'No limits on the number of AI courses',
+  },
+  {
+    icon: MapIcon,
+    title: 'AI Roadmaps',
+    description: 'No limits on the number of AI roadmaps',
   },
   {
     icon: Infinity,
-    title: 'No Daily Limits on course features',
-    description: 'Use all features without restrictions',
+    title: 'Extended Daily Limits',
+    description: 'Generate more content in a day',
   },
   {
     icon: MessageSquare,
-    title: 'Unlimited Course Follow-ups',
+    title: 'Course Follow-ups',
     description: 'Ask as many questions as you need',
   },
   {
@@ -129,6 +135,14 @@ export function UpgradeAccountModal(props: UpgradeAccountModalProps) {
 
     setSelectedPlan(currentPlan.interval);
   }, [currentPlan]);
+
+  useEffect(() => {
+    window?.fireEvent({
+      action: 'tutor_pricing',
+      category: 'ai_tutor',
+      label: 'Clicked Upgrade to Pro',
+    });
+  }, []);
 
   if (!user) {
     return null;
@@ -228,7 +242,14 @@ export function UpgradeAccountModal(props: UpgradeAccountModalProps) {
                           )}
                         </p>
                       )}
-                      <p className="text-2xl font-bold text-black sm:text-3xl">
+                      <p
+                        className={cn(
+                          'text-2xl font-bold text-black sm:text-3xl',
+                          {
+                            'mt-0 md:mt-6': !isYearly,
+                          },
+                        )}
+                      >
                         ${plan.amount}{' '}
                         <span className="text-xs font-normal text-gray-500 sm:text-sm">
                           / {isYearly ? 'year' : 'month'}
@@ -236,12 +257,12 @@ export function UpgradeAccountModal(props: UpgradeAccountModalProps) {
                       </p>
                     </div>
 
-                    <div className="flex-grow"></div>
+                    <div className="grow"></div>
 
                     <div>
                       <button
                         className={cn(
-                          'flex min-h-9 w-full items-center justify-center rounded-md py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-11 sm:py-2.5 sm:text-base',
+                          'flex min-h-9 w-full items-center justify-center rounded-md py-2 text-sm font-medium transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-yellow-400 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-11 sm:py-2.5 sm:text-base',
                           'bg-yellow-400 text-black hover:bg-yellow-500',
                         )}
                         disabled={
@@ -249,13 +270,35 @@ export function UpgradeAccountModal(props: UpgradeAccountModalProps) {
                         }
                         onClick={() => {
                           setSelectedPlan(plan.interval);
+
                           if (!currentPlanPriceId) {
                             const currentUrlPath = window.location.pathname;
-                            createCheckoutSession({
-                              priceId: plan.priceId,
-                              success: success || `${currentUrlPath}?s=1`,
-                              cancel: cancel || `${currentUrlPath}?s=0`,
+                            const encodedCurrentUrlPath =
+                              encodeURIComponent(currentUrlPath);
+                            const successPage = `/thank-you?next=${encodedCurrentUrlPath}&s=1`;
+
+                            window?.fireEvent({
+                              action: 'tutor_checkout',
+                              category: 'ai_tutor',
+                              label: 'Checkout Started',
                             });
+
+                            createCheckoutSession(
+                              {
+                                priceId: plan.priceId,
+                                success: success || successPage,
+                                cancel: cancel || `${currentUrlPath}?s=0`,
+                              },
+                              {
+                                onSuccess: () => {
+                                  window?.fireEvent({
+                                    action: `tutor_checkout_${plan.interval === 'month' ? 'mo' : 'an'}`,
+                                    category: 'ai_tutor',
+                                    label: `${plan.interval} Plan Checkout Started`,
+                                  });
+                                },
+                              },
+                            );
                             return;
                           }
                           setIsUpdatingPlan(true);
@@ -284,7 +327,10 @@ export function UpgradeAccountModal(props: UpgradeAccountModalProps) {
               {PREMIUM_PERKS.map((perk, index) => {
                 const Icon = perk.icon;
                 return (
-                  <div key={index} className="flex items-start space-x-2 sm:space-x-3">
+                  <div
+                    key={index}
+                    className="flex items-start space-x-2 sm:space-x-3"
+                  >
                     <Icon className="mt-0.5 h-4 w-4 text-yellow-500 sm:h-5 sm:w-5" />
                     <div>
                       <h4 className="text-sm font-medium text-black sm:text-base">
